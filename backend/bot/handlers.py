@@ -30,8 +30,16 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     mention = f"@{bot_username}"
     text = message.text
+    bot_id = context.bot.id
 
-    if mention.lower() not in text.lower():
+    is_mention = mention.lower() in text.lower()
+    is_reply_to_bot = (
+        message.reply_to_message is not None
+        and message.reply_to_message.from_user is not None
+        and message.reply_to_message.from_user.id == bot_id
+    )
+
+    if not is_mention and not is_reply_to_bot:
         return
 
     question = text.replace(mention, "").replace(mention.lower(), "").strip()

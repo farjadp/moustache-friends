@@ -47,6 +47,11 @@ def main():
     ))
 
     app.add_handler(MessageHandler(
+        filters.TEXT & filters.ChatType.GROUPS & filters.REPLY,
+        handle_mention
+    ))
+
+    app.add_handler(MessageHandler(
         (filters.TEXT | filters.Document.ALL | filters.AUDIO | filters.VIDEO | filters.VOICE)
         & filters.ChatType.PRIVATE,
         handle_private_message
