@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rag-backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/chroma_db:/app/chroma_db
+      - ./backend/app.db:/app/app.db
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  bot:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rag-bot
+    restart: unless-stopped
+    env_file: ./backend/.env
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/chroma_db:/app/chroma_db
+      - ./backend/app.db:/app/app.db
+    depends_on:
+      - backend
+    command: python -m bot.run
+
+  admin-panel:
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+    container_name: rag-admin
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  uploads:
+  chroma_db:

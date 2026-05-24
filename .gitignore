@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+*.env
+
+# Data
+backend/uploads/
+backend/chroma_db/
+backend/app.db
+
+# Node
+admin-panel/node_modules/
+admin-panel/dist/
+
+# Misc
+.DS_Store
+*.log
