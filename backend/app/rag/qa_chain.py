@@ -77,7 +77,7 @@ async def answer_question(question: str, user_name: str = "") -> Tuple[str, List
         messages.append({"role": "user", "content": question})
 
     response = await client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4.1",
         messages=messages,
         max_tokens=1500,
         temperature=0.7,
