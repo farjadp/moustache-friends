@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from telegram.ext import (
     Application,
@@ -24,10 +23,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def main():
+async def post_init(app: Application) -> None:
     await init_db()
+    logger.info("Database initialized. Bot is ready.")
 
-    app = Application.builder().token(settings.telegram_bot_token).build()
+
+def main():
+    app = (
+        Application.builder()
+        .token(settings.telegram_bot_token)
+        .post_init(post_init)
+        .build()
+    )
 
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
@@ -46,8 +53,8 @@ async def main():
     ))
 
     logger.info("Bot is starting...")
-    await app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
