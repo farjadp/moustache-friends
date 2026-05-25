@@ -1,10 +1,17 @@
 from openai import AsyncOpenAI
 from typing import Tuple, List
 from datetime import datetime, timezone, timedelta
+import re
 from app.config import settings
 from app.rag.vector_store import similarity_search
 
 client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+_NEWS_KEYWORDS = re.compile(
+    r"(خبر|اخبار|امروز|دیروز|این هفته|هفته.ی اخیر|هفته پیش|ماه جاری|اتفاق|رویداد"
+    r"|جدید|آخرین|تازه|news|latest|today|this week|recent|current)",
+    re.IGNORECASE,
+)
 
 
 def _to_jalali(year: int, month: int, day: int) -> str:
@@ -52,8 +59,20 @@ def _get_system_prompt() -> str:
 """
 
 
+async def _answer_with_web_search(question: str, system_prompt: str) -> str:
+    """Use OpenAI Responses API with built-in web search for real-time questions."""
+    response = await client.responses.create(
+        model="gpt-4.1",
+        tools=[{"type": "web_search_preview"}],
+        instructions=system_prompt,
+        input=question,
+    )
+    return response.output_text
+
+
 async def answer_question(question: str, user_name: str = "") -> Tuple[str, List[str]]:
     relevant_docs = similarity_search(question, k=5)
+    system_prompt = _get_system_prompt()
 
     context = ""
     sources = []
@@ -66,7 +85,16 @@ async def answer_question(question: str, user_name: str = "") -> Tuple[str, List
                 sources.append(source)
         context = "\n\n---\n\n".join(context_parts)
 
-    messages = [{"role": "system", "content": _get_system_prompt()}]
+    needs_web = bool(_NEWS_KEYWORDS.search(question)) and not context
+
+    if needs_web:
+        try:
+            answer = await _answer_with_web_search(question, system_prompt)
+            return answer, ["🌐 جستجوی وب"]
+        except Exception:
+            pass
+
+    messages = [{"role": "system", "content": system_prompt}]
 
     if context:
         messages.append({
