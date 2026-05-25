@@ -21,3 +21,6 @@ sqlalchemy==2.0.31
 aiosqlite==0.20.0
 greenlet>=3.0.0
 ffmpeg-python==0.2.0
+google-api-python-client==2.136.0
+google-auth==2.30.0
+google-auth-httplib2==0.2.0

@@ -281,6 +281,36 @@ async def cmd_list_docs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
+async def cmd_sync_drive(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if not user or not is_admin(user.id):
+        await update.message.reply_text("⛔ این دستور فقط برای ادمین‌هاست.")
+        return
+
+    from app.rag.drive_sync import sync_drive
+    from app.config import settings
+
+    if not settings.google_drive_folder_id:
+        await update.message.reply_text("❌ Google Drive پیکربندی نشده.\nمتغیرهای GOOGLE_DRIVE_FOLDER_ID و GOOGLE_SERVICE_ACCOUNT_JSON را تنظیم کن.")
+        return
+
+    msg = await update.message.reply_text("⏳ در حال sync با Google Drive...")
+    result = await sync_drive()
+
+    if "error" in result:
+        await msg.edit_text(f"❌ خطا: {result['error']}")
+        return
+
+    text = (
+        f"✅ *Google Drive Sync کامل شد*\n\n"
+        f"📄 فایل جدید ایندکس شده: {result['new']}\n"
+        f"⏭ قبلاً موجود: {result['skipped']}"
+    )
+    if result["errors"]:
+        text += f"\n❌ خطا در {len(result['errors'])} فایل"
+    await msg.edit_text(text, parse_mode="Markdown")
+
+
 async def cmd_delete_doc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not user or not is_admin(user.id):
