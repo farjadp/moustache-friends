@@ -79,6 +79,19 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await db.commit()
 
 
+async def _is_group_member(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Check if user is a member of the allowed group."""
+    if not settings.allowed_group_id:
+        return True
+    try:
+        member = await context.bot.get_chat_member(
+            chat_id=settings.allowed_group_id, user_id=user_id
+        )
+        return member.status not in ("left", "kicked", "banned")
+    except Exception:
+        return False
+
+
 async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
     if not message:
@@ -86,6 +99,10 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
 
     user = message.from_user
     if not user:
+        return
+
+    if not is_admin(user.id) and not await _is_group_member(user.id, context):
+        await message.reply_text("⛔ فقط اعضای گروه می‌توانند از این ربات استفاده کنند.")
         return
 
     if message.text:

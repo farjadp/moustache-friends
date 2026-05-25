@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./app.db"
     max_file_size_mb: int = 500
     whisper_model: str = "base"
+    allowed_group_id: int = 0
 
     @property
     def admin_ids(self) -> List[int]:
