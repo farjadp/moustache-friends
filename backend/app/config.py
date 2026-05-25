@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 500
     whisper_model: str = "base"
     allowed_group_id: int = 0
+    grok_api_key: str = ""
     google_drive_folder_id: str = ""
     google_service_account_json: str = ""
     drive_sync_interval_hours: int = 6

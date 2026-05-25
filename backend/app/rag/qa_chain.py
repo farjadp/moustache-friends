@@ -7,6 +7,16 @@ from app.rag.vector_store import similarity_search
 
 client = AsyncOpenAI(api_key=settings.openai_api_key)
 
+grok_client = AsyncOpenAI(
+    api_key=settings.grok_api_key or "dummy",
+    base_url="https://api.x.ai/v1",
+) if settings.grok_api_key else None
+
+_GROK_PREFIX = re.compile(
+    r"^(grok|x|گروک|گراک)[:\s،,]",
+    re.IGNORECASE,
+)
+
 _NEWS_KEYWORDS = re.compile(
     r"(خبر|اخبار|امروز|دیروز|این هفته|هفته.ی اخیر|هفته پیش|ماه جاری|اتفاق|رویداد"
     r"|جدید|آخرین|تازه|news|latest|today|this week|recent|current)",
@@ -70,7 +80,27 @@ async def _answer_with_web_search(question: str, system_prompt: str) -> str:
     return response.output_text
 
 
+async def _answer_with_grok(question: str, system_prompt: str, context: str) -> str:
+    """Answer using Grok via xAI API."""
+    messages = [{"role": "system", "content": system_prompt}]
+    if context:
+        messages.append({"role": "user", "content": f"اطلاعات مرتبط:\n\n{context}\n\n---\n\nسوال: {question}"})
+    else:
+        messages.append({"role": "user", "content": question})
+    response = await grok_client.chat.completions.create(
+        model="grok-3",
+        messages=messages,
+        max_tokens=1500,
+        temperature=0.7,
+    )
+    return response.choices[0].message.content
+
+
 async def answer_question(question: str, user_name: str = "") -> Tuple[str, List[str]]:
+    use_grok = bool(_GROK_PREFIX.match(question)) and grok_client is not None
+    if use_grok:
+        question = _GROK_PREFIX.sub("", question).strip()
+
     relevant_docs = similarity_search(question, k=5)
     system_prompt = _get_system_prompt()
 
@@ -84,6 +114,13 @@ async def answer_question(question: str, user_name: str = "") -> Tuple[str, List
             if source and source not in sources:
                 sources.append(source)
         context = "\n\n---\n\n".join(context_parts)
+
+    if use_grok:
+        try:
+            answer = await _answer_with_grok(question, system_prompt, context)
+            return answer, sources + ["🤖 Grok"]
+        except Exception as e:
+            pass
 
     needs_web = bool(_NEWS_KEYWORDS.search(question)) and not context
 
