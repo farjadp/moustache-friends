@@ -13,7 +13,7 @@ grok_client = AsyncOpenAI(
 ) if settings.grok_api_key else None
 
 _GROK_PREFIX = re.compile(
-    r"^(grok|x|گروک|گراک)[:\s،,]",
+    r"^(grok|گروک|گراک)[:\s،,]?\s*",
     re.IGNORECASE,
 )
 
